@@ -20,4 +20,11 @@ Done :: dhcpctl leases search cisco
 
 
 
-
+dhcpctl list leases
+dhcpctl list leases 10.0.0.0/24
+dhcpctl list scopes 
+dhcpctl list scopes 10.0.0.0
+dhcpctl list globals
+dhcpctl search leases cisco
+dhcpctl get cli-config
+dhcpctl set cli-config
