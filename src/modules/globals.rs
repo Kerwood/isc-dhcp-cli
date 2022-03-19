@@ -1,8 +1,7 @@
+use super::error::DhcpctlError;
 use super::reqwest_handler;
 use colored::*;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Globals {
@@ -22,17 +21,27 @@ pub struct Options {
     pub domain_name_servers: Option<Vec<String>>,
 }
 
-pub async fn list_globals () -> Result<(), Box<dyn Error>> {
+pub async fn list_globals() -> Result<(), DhcpctlError> {
     let payload: Globals = reqwest_handler::run("/config/globals").await?;
 
     println!("");
-    if let Some(v) = payload.authoritative { println!("{} {}", "Authoritative: ".bold(), v ); }
-    if let Some(v) = &payload.default_lease_time { println!("{} {}", "Default Lease Time: ".bold(), v ); }
-    if let Some(v) = &payload.max_lease_time { println!("{} {}", "Max Lease Time: ".bold(), v ); }
+    if let Some(v) = payload.authoritative {
+        println!("{} {}", "Authoritative: ".bold(), v);
+    }
+    if let Some(v) = &payload.default_lease_time {
+        println!("{} {}", "Default Lease Time: ".bold(), v);
+    }
+    if let Some(v) = &payload.max_lease_time {
+        println!("{} {}", "Max Lease Time: ".bold(), v);
+    }
     if let Some(v) = payload.options {
         println!("");
-        if let Some(x) = v.domain_name { println!("{} {}", "Domain name: ".bold(), x); }
-        if let Some(x) = v.domain_name_servers { println!("{} {}", "DNS Servers: ".bold(), x.join(", "));}
+        if let Some(x) = v.domain_name {
+            println!("{} {}", "Domain name: ".bold(), x);
+        }
+        if let Some(x) = v.domain_name_servers {
+            println!("{} {}", "DNS Servers: ".bold(), x.join(", "));
+        }
     }
     Ok(())
 }

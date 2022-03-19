@@ -1,8 +1,8 @@
+use super::error::DhcpctlError;
 use super::reqwest_handler;
 use colored::*;
 use prettytable::{cell, format, row, Attr, Cell, Row, Table};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Scope {
@@ -52,7 +52,7 @@ fn table_format() -> format::TableFormat {
         .build()
 }
 
-pub async fn list_scopes(pxe: bool, dns: bool) -> Result<(), Box<dyn Error>> {
+pub async fn list_scopes(pxe: bool, dns: bool) -> Result<(), DhcpctlError> {
     let payload: Vec<Scope> = reqwest_handler::run("/config/scopes").await?;
 
     let mut table = Table::new();
@@ -107,7 +107,7 @@ pub async fn list_scopes(pxe: bool, dns: bool) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub async fn get_scope(subnet_id: &str) -> Result<(), Box<dyn Error>> {
+pub async fn get_scope(subnet_id: &str) -> Result<(), DhcpctlError> {
     let mut payload: Vec<Scope> = reqwest_handler::run("/config/scopes").await?;
 
     payload.retain(|f| f.ip == subnet_id);

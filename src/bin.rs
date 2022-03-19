@@ -1,5 +1,5 @@
 mod modules;
-use modules::{config, scopes, leases, globals};
+use modules::{config, globals, leases, scopes};
 use structopt::StructOpt;
 
 const APP_NAME: &str = "dhcpctl";
@@ -85,8 +85,10 @@ enum GetType {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    config::check_if_conf_exists();
+async fn main() -> Result<(), String> {
+    if let Err(_) = config::check_if_conf_exists() {
+        std::process::exit(1)
+    }
 
     match Dhcpctl::from_args() {
         Dhcpctl::Set(config_type) => match config_type {
@@ -109,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Dhcpctl::Globals {} => {
             globals::list_globals().await?;
-        },
+        }
 
         Dhcpctl::Scopes(scope_type) => match scope_type {
             ScopeType::List { pxe, dns } => {

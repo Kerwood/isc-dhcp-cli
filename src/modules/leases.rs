@@ -1,9 +1,9 @@
+use super::error::DhcpctlError;
 use super::reqwest_handler;
 use chrono::prelude::*;
 use cidr_utils::cidr::IpCidr;
 use prettytable::{cell, format, row, Table};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Lease {
@@ -26,16 +26,16 @@ pub struct Lease {
     uid: Option<String>,
 }
 
-pub async fn get_leases(cidr: String) -> Result<(), Box<dyn Error>> {
+pub async fn get_leases(cidr: String) -> Result<(), DhcpctlError> {
     if *&cidr.len() != 0 && !IpCidr::is_ipv4_cidr(&cidr) {
-        return Err("Not a valid CIDR.".into());
+        return Err(DhcpctlError::NotValidCIDR);
     }
     let payload: Vec<Lease> = reqwest_handler::run(format!("/leases/{}", cidr).as_str()).await?;
     print_leases(payload)?;
     Ok(())
 }
 
-pub async fn search_leases(search_word: String) -> Result<(), Box<dyn Error>> {
+pub async fn search_leases(search_word: String) -> Result<(), DhcpctlError> {
     let payload: Vec<Lease> =
         reqwest_handler::run(format!("/leases/search/{}", search_word).as_str()).await?;
     print_leases(payload)?;
@@ -53,7 +53,7 @@ fn table_format() -> format::TableFormat {
         .build()
 }
 
-fn print_leases(leases: Vec<Lease>) -> Result<(), Box<dyn Error>> {
+fn print_leases(leases: Vec<Lease>) -> Result<(), DhcpctlError> {
     let mut table = Table::new();
     table.set_format(table_format());
     table.set_titles(row!(b -> "MAC Address", b -> "Status", b -> "IP", b -> "Hostname", b -> "Starts", b -> "Ends", b -> "Vendor Identifier"));

@@ -1,13 +1,16 @@
 use super::config;
 use super::config::ConfyConfig;
+use super::error::DhcpctlError;
 use reqwest;
 use reqwest::header::AUTHORIZATION;
 use serde::de::DeserializeOwned;
-use std::error::Error;
 use std::process::exit;
 
-pub async fn run<T: DeserializeOwned>(path: &str) -> Result<T, Box<dyn Error>> {
+pub async fn run<T: DeserializeOwned>(path: &str) -> Result<T, DhcpctlError> {
     let config: ConfyConfig = config::load_config()?;
+    if config.api_url.is_empty() {
+        return Err(DhcpctlError::MissingUrl);
+    }
     let client = reqwest::Client::new();
     let response = client
         .get(format!("{}{}", config.api_url, path))
