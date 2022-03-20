@@ -1,5 +1,6 @@
 use chrono::format::ParseError;
 use confy::ConfyError;
+use reqwest::header::InvalidHeaderValue;
 use reqwest::Error as ReqwestError;
 use std::error::Error;
 use std::fmt;
@@ -12,6 +13,8 @@ pub enum DhcpctlError {
     Reqwest(ReqwestError),
     Confy(ConfyError),
     ParseError(ParseError),
+    InvalidHeaderValue(InvalidHeaderValue),
+    BadStatusCode(String),
 }
 
 impl Error for DhcpctlError {}
@@ -25,6 +28,8 @@ impl fmt::Display for DhcpctlError {
             DhcpctlError::Reqwest(e) => write!(f, "{}", e.to_string()),
             DhcpctlError::Confy(e) => write!(f, "[config-file] {}", e.to_string()),
             DhcpctlError::ParseError(e) => write!(f, "{}", e.to_string()),
+            DhcpctlError::InvalidHeaderValue(e) => write!(f, "{}", e.to_string()),
+            DhcpctlError::BadStatusCode(e) => write!(f, "{}", e),
         }
     }
 }
@@ -44,6 +49,12 @@ impl From<ConfyError> for DhcpctlError {
 impl From<ParseError> for DhcpctlError {
     fn from(error: ParseError) -> Self {
         DhcpctlError::ParseError(error)
+    }
+}
+
+impl From<InvalidHeaderValue> for DhcpctlError {
+    fn from(error: InvalidHeaderValue) -> Self {
+        DhcpctlError::InvalidHeaderValue(error)
     }
 }
 

@@ -14,7 +14,7 @@ impl Default for ConfyConfig {
     fn default() -> Self {
         ConfyConfig {
             api_url: "".to_string(),
-            auth_token: "not-set".to_string(),
+            auth_token: "".to_string(),
         }
     }
 }
