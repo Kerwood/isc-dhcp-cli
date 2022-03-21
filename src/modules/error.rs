@@ -7,6 +7,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum DhcpctlError {
+    MissingArguments,
     MissingConfigFile,
     MissingUrl,
     NotValidCIDR,
@@ -22,8 +23,9 @@ impl Error for DhcpctlError {}
 impl fmt::Display for DhcpctlError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            DhcpctlError::MissingArguments => write!(f, "You need to provide either an url, token or both."),
             DhcpctlError::MissingConfigFile => write!(f, "Config file not found."),
-            DhcpctlError::MissingUrl => write!(f, "The URL for the ISC DHCP API is missing. Set it with 'dhcpctl set config --url https://ip-or-domain-name'"),
+            DhcpctlError::MissingUrl => write!(f, "The URL for the ISC DHCP API is missing. Set it with 'dhcpctl config set --url https://ip-or-domain-name'."),
             DhcpctlError::NotValidCIDR => write!(f, "Not a valid CIDR."),
             DhcpctlError::Reqwest(e) => write!(f, "{}", e.to_string()),
             DhcpctlError::Confy(e) => write!(f, "[config-file] {}", e.to_string()),

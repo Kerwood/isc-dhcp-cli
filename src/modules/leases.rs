@@ -54,26 +54,30 @@ fn table_format() -> format::TableFormat {
 }
 
 fn print_leases(leases: Vec<Lease>) -> Result<(), DhcpctlError> {
-    let mut table = Table::new();
-    table.set_format(table_format());
-    table.set_titles(row!(b -> "MAC Address", b -> "Status", b -> "IP", b -> "Hostname", b -> "Starts", b -> "Ends", b -> "Vendor Identifier"));
-    for lease in leases.iter() {
-        let hostname = lease.client_hostname.clone().unwrap_or_default();
-        let ends = DateTime::parse_from_rfc3339(&lease.ends)?.format("%Y-%m-%d %H:%M:%S");
-        let starts = DateTime::parse_from_rfc3339(&lease.starts)?.format("%Y-%m-%d %H:%M:%S");
-        table.add_row(row!(
-            &lease.hardware_ethernet,
-            &lease.binding_state,
-            &lease.ip,
-            &hostname,
-            &starts,
-            &ends,
-            lease
-                .set_vendor_class_identifier
-                .clone()
-                .unwrap_or_default(),
-        ));
+    if leases.len() > 0 {
+        let mut table = Table::new();
+        table.set_format(table_format());
+        table.set_titles(row!(b -> "MAC Address", b -> "Status", b -> "IP", b -> "Hostname", b -> "Starts", b -> "Ends", b -> "Vendor Identifier"));
+        for lease in leases.iter() {
+            let hostname = lease.client_hostname.clone().unwrap_or_default();
+            let ends = DateTime::parse_from_rfc3339(&lease.ends)?.format("%Y-%m-%d %H:%M:%S");
+            let starts = DateTime::parse_from_rfc3339(&lease.starts)?.format("%Y-%m-%d %H:%M:%S");
+            table.add_row(row!(
+                &lease.hardware_ethernet,
+                &lease.binding_state,
+                &lease.ip,
+                &hostname,
+                &starts,
+                &ends,
+                lease
+                    .set_vendor_class_identifier
+                    .clone()
+                    .unwrap_or_default(),
+            ));
+        }
+        table.printstd();
+    } else {
+        println!("No leases found");
     }
-    table.printstd();
     Ok(())
 }

@@ -2,6 +2,7 @@ mod modules;
 use modules::{config, globals, leases, scopes};
 use structopt::StructOpt;
 
+use crate::modules::error::DhcpctlError;
 const APP_NAME: &str = "dhcpctl";
 const CONFIG_NAME: &str = "config";
 
@@ -10,21 +11,23 @@ const CONFIG_NAME: &str = "config";
     name = "dhcpctl",
     author = "Author Patrick Kerwood <patrick@kerwood.dk>"
 )]
+struct Dhcpctl {
+    #[structopt(subcommand)]
+    cmd: Cmd,
+}
 
-enum Dhcpctl {
-    #[structopt(name = "set", about = "Set CLI configuration.")]
-    Set(SetType),
+#[derive(StructOpt, Debug)]
+enum Cmd {
+    #[structopt(about = "Set URL and/or auth token.")]
+    Config(Config),
 
-    #[structopt(name = "get", about = "Get CLI configuration.")]
-    Get(GetType),
-
-    #[structopt(name = "globals", about = "Get global configuration.")]
+    #[structopt(name = "globals", about = "Get DHCP global configuration.")]
     Globals {},
 
     #[structopt(name = "scopes", about = "Get all DHCP scopes.")]
     Scopes(ScopeType),
 
-    #[structopt(name = "leases", about = "Get all leases.")]
+    #[structopt(name = "leases", about = "Get all DHCP leases.")]
     Leases(LeaseType),
 }
 
@@ -61,59 +64,54 @@ enum LeaseType {
     },
 }
 
-// ##########################
-
 #[derive(StructOpt, Debug)]
-enum SetType {
-    #[structopt(about = "Set configuration")]
-    Config {
-        #[structopt(short, long, help = "Set the URL of the ISC DHCP API.")]
+enum Config {
+    #[structopt(about = "Set configuration.")]
+    Set {
+        #[structopt(short, long, help = "Set the URL of the ISC DHCP API.", global = true)]
         url: Option<String>,
+
         #[structopt(
             short,
             long,
-            help = "API authentication token. This will be added as a header eg. 'authorization: xxxxx'"
+            global = true,
+            help = "API authentication token. This will be added as a header eg. 'authorization: xxxxx'."
         )]
         token: Option<String>,
     },
-}
 
-#[derive(StructOpt, Debug)]
-enum GetType {
-    #[structopt(about = "Set configuration")]
-    Config {},
+    #[structopt(about = "List configuration.")]
+    List {},
 }
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
-    if let Err(_) = config::check_if_conf_exists() {
-        std::process::exit(1)
-    }
+    let args = Dhcpctl::from_args();
 
-    match Dhcpctl::from_args() {
-        Dhcpctl::Set(config_type) => match config_type {
-            SetType::Config { url, token } => {
+    match args.cmd {
+        Cmd::Config(config_type) => match config_type {
+            Config::Set { url, token } => {
+                if url.is_none() && token.is_none() {
+                    return Err(DhcpctlError::MissingArguments.to_string());
+                }
                 if url.is_some() {
-                    config::set_api_url(&url.unwrap())?;
+                    config::set_api_url(&url.expect("Error unwrapping url option"))?;
                 }
                 if token.is_some() {
-                    config::set_auth_token(&token.unwrap())?;
+                    config::set_auth_token(&token.expect("Error unwrapping token option"))?;
                 }
             }
-        },
 
-        Dhcpctl::Get(config_type) => match config_type {
-            GetType::Config {} => {
-                println!("API URL: {}", config::get_api_url()?);
-                println!("Auth token: {}", config::get_auth_token()?);
+            Config::List {} => {
+                config::print_config()?;
             }
         },
 
-        Dhcpctl::Globals {} => {
+        Cmd::Globals {} => {
             globals::list_globals().await?;
         }
 
-        Dhcpctl::Scopes(scope_type) => match scope_type {
+        Cmd::Scopes(scope_type) => match scope_type {
             ScopeType::List { pxe, dns } => {
                 scopes::list_scopes(pxe, dns).await?;
             }
@@ -122,7 +120,7 @@ async fn main() -> Result<(), String> {
             }
         },
 
-        Dhcpctl::Leases(lease_type) => match lease_type {
+        Cmd::Leases(lease_type) => match lease_type {
             LeaseType::List { cidr } => {
                 let cidr = cidr.unwrap_or_default();
                 leases::get_leases(cidr).await?;
