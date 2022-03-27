@@ -54,6 +54,14 @@ enum LeaseType {
     List {
         #[structopt(help = "Specific CIDR or IP, Eg. 10.3.0.0/24 or 10.3.0.120")]
         cidr: Option<String>,
+
+        #[structopt(
+            long,
+            short,
+            takes_value = false,
+            help = "Look up the vendor on MAC addresses."
+        )]
+        mac_lookup: bool,
     },
     #[structopt(
         about = "Search for leases in the 'client-hostname', 'hardware-ethernet' and 'set-vendor-class-identifier' properties."
@@ -61,6 +69,14 @@ enum LeaseType {
     Search {
         #[structopt(help = "The string to search for.")]
         string: String,
+
+        #[structopt(
+            long,
+            short,
+            takes_value = false,
+            help = "Look up the vendor on MAC addresses."
+        )]
+        mac_lookup: bool,
     },
 }
 
@@ -121,12 +137,12 @@ async fn main() -> Result<(), String> {
         },
 
         Cmd::Leases(lease_type) => match lease_type {
-            LeaseType::List { cidr } => {
+            LeaseType::List { cidr, mac_lookup } => {
                 let cidr = cidr.unwrap_or_default();
-                leases::get_leases(cidr).await?;
+                leases::get_leases(cidr, mac_lookup).await?;
             }
-            LeaseType::Search { string } => {
-                leases::search_leases(string).await?;
+            LeaseType::Search { string, mac_lookup } => {
+                leases::search_leases(string, mac_lookup).await?;
             }
         },
     }
