@@ -4,9 +4,11 @@ use super::error::DhcpctlError;
 use super::reqwest_handler;
 use chrono::prelude::*;
 use cidr_utils::cidr::IpCidr;
+use colored::Colorize;
 use prettytable::{cell, format, row, Attr, Cell, Row, Table};
 use serde::{Deserialize, Serialize};
 
+use futures;
 use reqwest;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -38,6 +40,8 @@ pub struct MacVendorLookupRoot {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MacVendorLookup {
     pub company: String,
+    pub mac_prefix: String,
+    pub error: Option<String>,
 }
 
 pub async fn get_leases(cidr: String, mac_lookup: bool) -> Result<(), DhcpctlError> {
@@ -69,20 +73,20 @@ fn table_format() -> format::TableFormat {
 
 async fn print_leases(leases: Vec<Lease>, mac_lookup: bool) -> Result<(), DhcpctlError> {
     if leases.len() > 0 {
-        let mut hash: HashMap<String, String> = HashMap::new();
-        // let test = get_vendors("00:1b:21").await?;
-        // println!("{:?}", macs.len());
-        // println!("{:#?}", test);
+        let mut vendor_lookup_tabel: HashMap<String, String> = HashMap::new();
 
         let mut table = Table::new();
         table.set_format(table_format());
-
         let mut row: Row = row!(b -> "MAC Address", b -> "Status", b -> "IP", b -> "Hostname", b -> "Starts", b -> "Ends", b -> "Vendor Identifier");
 
         if mac_lookup {
+            println!(
+                "\n{}\n",
+                "The vendor lookup data is from https://macvendors.co. Too many requests could result in API limitations.".cyan()
+            );
             let macs: HashSet<&str> = leases.iter().map(|x| &x.hardware_ethernet[0..8]).collect();
-            hash = get_vendors(&macs).await?;
-            row.add_cell(Cell::new("Mac Vendor").with_style(Attr::Bold));
+            vendor_lookup_tabel = get_vendors(&macs).await?;
+            row.insert_cell(0, Cell::new("Mac Vendor").with_style(Attr::Bold));
         }
 
         table.set_titles(row);
@@ -108,7 +112,8 @@ async fn print_leases(leases: Vec<Lease>, mac_lookup: bool) -> Result<(), Dhcpct
                 row.insert_cell(
                     0,
                     Cell::new(
-                        hash.get(&lease.hardware_ethernet[0..8])
+                        vendor_lookup_tabel
+                            .get(&lease.hardware_ethernet[0..8])
                             .unwrap_or(&"".to_string()),
                     ),
                 )
@@ -124,28 +129,38 @@ async fn print_leases(leases: Vec<Lease>, mac_lookup: bool) -> Result<(), Dhcpct
 }
 
 async fn get_vendors(macs: &HashSet<&str>) -> Result<HashMap<String, String>, DhcpctlError> {
-    let mut hash: HashMap<String, String> = HashMap::new();
+    let mut mac_hashmap: HashMap<String, String> = HashMap::new();
     let client = reqwest::Client::new();
+    let mut vendor_requests = Vec::new();
 
-    for mac in macs.iter() {
+    for mac in macs {
         if ["2", "6", "a", "e"].contains(&&mac[1..2]) {
-            hash.insert(mac.to_string(), "::randomized::".to_string());
+            mac_hashmap.insert(mac.to_string(), "::randomized::".to_string());
         } else {
-            let response = client
-                .get(format!("https://macvendors.co/api/{}", mac))
-                .send()
-                .await?;
-            match response.error_for_status() {
-                Ok(res) => {
-                    let result = match res.json::<MacVendorLookupRoot>().await {
-                        Ok(x) => x.result.company,
-                        Err(_) => "unknown".to_string(),
-                    };
-                    hash.insert(mac.to_string(), result);
-                }
-                Err(error) => return Err(DhcpctlError::BadStatusCode(error.to_string())),
-            }
+            vendor_requests.push(
+                client
+                    .get(format!("https://macvendors.co/api/{}", mac))
+                    .send(),
+            );
         }
     }
-    Ok(hash)
+
+    for future_result in futures::future::join_all(vendor_requests).await {
+        match future_result {
+            Ok(response) => match response.error_for_status() {
+                Ok(res) => {
+                    match res.json::<MacVendorLookupRoot>().await {
+                        Ok(vendor) => mac_hashmap.insert(
+                            vendor.result.mac_prefix.to_string().to_lowercase(),
+                            vendor.result.company.to_string(),
+                        ),
+                        Err(_) => None,
+                    };
+                }
+                Err(error) => return Err(DhcpctlError::BadStatusCode(error.to_string())),
+            },
+            Err(x) => return Err(DhcpctlError::Reqwest(x)),
+        }
+    }
+    Ok(mac_hashmap)
 }
