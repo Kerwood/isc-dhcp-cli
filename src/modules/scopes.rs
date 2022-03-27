@@ -1,6 +1,6 @@
 use super::error::DhcpctlError;
 use super::reqwest_handler;
-use colored::*;
+use colored::Colorize;
 use prettytable::{cell, format, row, Attr, Cell, Row, Table};
 use serde::{Deserialize, Serialize};
 

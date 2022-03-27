@@ -1,6 +1,6 @@
 use super::error::DhcpctlError;
 use super::reqwest_handler;
-use colored::*;
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

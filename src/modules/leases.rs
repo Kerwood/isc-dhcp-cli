@@ -1,15 +1,13 @@
-use std::collections::{HashMap, HashSet};
-
 use super::error::DhcpctlError;
 use super::reqwest_handler;
 use chrono::prelude::*;
 use cidr_utils::cidr::IpCidr;
 use colored::Colorize;
-use prettytable::{cell, format, row, Attr, Cell, Row, Table};
-use serde::{Deserialize, Serialize};
-
 use futures;
+use prettytable::{cell, format, row, Attr, Cell, Row, Table};
 use reqwest;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Lease {

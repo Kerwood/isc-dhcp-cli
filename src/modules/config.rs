@@ -1,6 +1,6 @@
 use super::error::DhcpctlError;
 use crate::{APP_NAME, CONFIG_NAME};
-use colored::*;
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
