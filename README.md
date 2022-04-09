@@ -31,23 +31,23 @@ Set the url to the ISC DHCP API. If you are using a authentication token, set th
 dhcpctl config set --url http://ip-or-url-to-the-api --token token-here
 ```
 
-### List all configured scopes.
+List all configured scopes.
 
 ![](images/scopes-list.png)
 
-### List all leases.
+List all leases.
 
 ![](images/leases-list.png)
 
-### List a range of leases.
+List a range of leases.
 
 ![](images/leases-list-range.png)
 
-### List a range of leases and make vendor lookups on MACs.
+List a range of leases and make vendor lookups on MACs.
 
 ![](images/leases-list-range-vendor.png)
 
-### Below are three examples on searching leases.
+Below are three examples on searching leases.
 
 ![](images/search-ap.png)
 
