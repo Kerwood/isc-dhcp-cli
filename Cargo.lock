@@ -589,7 +589,7 @@ checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
 
 [[package]]
 name = "isc-dhcp-cli"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "cidr",
